@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+
 /**
  * This test class has a validation for {@link com.apptware.interview.serialization.Adult}. The
  * first test tests the validation using a constructor by creating an illegal entity and expecting
@@ -14,53 +16,60 @@ import org.junit.jupiter.api.Test;
  */
 class AdultTest {
 
-  @Test
-  void testConstructorValidation() {
-    Assertions.assertThatThrownBy(() -> new Adult("", "", 18))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Firstname or Lastname CANNOT be blank.");
-    Assertions.assertThatThrownBy(() -> new Adult("Firstname", "Lastname", 17))
-        .isInstanceOf(IllegalArgumentException.class)
-    // Changes expected ----->
-        .hasMessage("Firstname or Lastname CANNOT be blank.");
-    // <----- Changes expected
+    @Test
+    void testConstructorValidation() {
+        Assertions.assertThatThrownBy(() -> new Adult("", "", 18))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Firstname or Lastname CANNOT be blank.");
+        Assertions.assertThatThrownBy(() -> new Adult("Firstname", "Lastname", 17))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Inappropriate Age for an Adult.");
+    }
 
-    String json1 =
-        """
-            {
-              "firstName": "",
-              "lastName": "",
-              "age": 18
-            }
-            """;
+    @Test
+    void testDeserializationValidation() {
+        String json1 =
+                """
+                    {
+                      "firstName": "",
+                      "lastName": "",
+                      "age": 18
+                    }
+                    """;
 
-    String json2 =
-        """
-            {
-              "firstName": "Firstname",
-              "lastName": "Lastname",
-              "age": 17
-            }
-            """;
+        String json2 =
+                """
+                    {
+                      "firstName": "Firstname",
+                      "lastName": "Lastname",
+                      "age": 17
+                    }
+                    """;
 
-    ObjectMapper objectMapper = new ObjectMapper();
-    Assertions.assertThatThrownBy(
-            () -> {
-              Adult adult = objectMapper.readValue(json1, Adult.class);
-              System.out.println(adult);
-            })
-    // Changes expected ----->
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Firstname or Lastname CANNOT be blank.");
-    // <----- Changes expected
-    Assertions.assertThatThrownBy(
-            () -> {
-              Adult adult = objectMapper.readValue(json2, Adult.class);
-              System.out.println(adult);
-            })
-    // Changes expected ----->
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Inappropriate Age for an Adult.");
-    // <----- Changes expected
-  }
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        // Test deserialization validation for blank names
+        Assertions.assertThatThrownBy(() -> {
+                    try {
+                        Adult adult = objectMapper.readValue(json1, Adult.class);
+                        System.out.println(adult);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Firstname or Lastname CANNOT be blank.");
+
+        // Test deserialization validation for inappropriate age
+        Assertions.assertThatThrownBy(() -> {
+                    try {
+                        Adult adult = objectMapper.readValue(json2, Adult.class);
+                        System.out.println(adult);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Inappropriate Age for an Adult.");
+    }
 }
